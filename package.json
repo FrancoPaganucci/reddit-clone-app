@@ -8,12 +8,15 @@
   "dependencies": {
     "@apollo/client": "^3.7.3",
     "@heroicons/react": "^2.0.13",
+    "@types/react-timeago": "^4.1.3",
     "graphql": "^16.6.0",
     "next": "latest",
     "next-auth": "^4.18.8",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-hook-form": "^7.41.5",
+    "react-hot-toast": "^2.4.0",
+    "react-timeago": "^7.1.0",
     "swc-loader": "^0.2.3"
   },
   "devDependencies": {

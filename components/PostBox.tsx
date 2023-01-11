@@ -8,6 +8,7 @@ import { ADD_POST, ADD_SUBREDDIT } from "../graphql/mutations";
 import { useMutation } from "@apollo/client"
 import client from '../apollo-client'
 import { GET_SUBREDDIT_BY_TOPIC } from "../graphql/queries";
+import toast from 'react-hot-toast'
 
 type FormData = {
   postTitle: string;
@@ -32,10 +33,13 @@ function PostBox() {
 
   const onSubmit = handleSubmit(async (formData) => {
     console.log(formData);
+    const notification = toast.loading('Creating new post...');
 
     try {
         // Query for the subreddit topic...
-        const { data: { getSubredditListByTopic }} = await client.query({
+        const { 
+          data: { getSubredditListByTopic },
+        } = await client.query({
             query: GET_SUBREDDIT_BY_TOPIC,
             variables: {
                 topic: formData.subreddit 
@@ -47,13 +51,14 @@ function PostBox() {
         if(!subredditExists) {
             // create subreddit....
             console.log('Subreddit is new! => creating a new Subreddit :)')
+            console.log(formData.subreddit)
             const { data: { insertSubreddit: newSubreddit } } = await addSubreddit({
                 variables: {
                     topic: formData.subreddit
                 } 
             })
-            console.log('Creating post...', formData)
-            const image = formData.postImage || ''
+            console.log('Creating post...', newSubreddit)
+            const image = formData.postImage || ""
 
             const {data: { insertPost: newPost} } = await addPost({
                 variables: {
@@ -82,8 +87,21 @@ function PostBox() {
             })
             console.log('New post added: ', newPost)
         }
+
+        // after the post has been added
+        setValue('postBody', '')
+        setValue('postImage', '')
+        setValue('postTitle', '')
+        setValue('subreddit', '')
+
+        toast.success('New post created', {
+            id: notification
+        })
     } catch (error) {
-        
+        console.error(error)
+        toast.error('Sorry, something went wrong! :/', {
+            id: notification
+        })
     }
   });
 

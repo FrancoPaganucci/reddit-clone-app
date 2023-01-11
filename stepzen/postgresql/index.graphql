@@ -15,16 +15,27 @@ Table 'post' aliased as GQLName: 'Post'
 """
 type Post {
   body: String
-  comment: [Comment] @materializer(query: "getCommentUsingComment_post_id_fkey")
   created_at: DateTime
   id: ID!
   image: String
-  subreddit: Subreddit
-    @materializer(query: "getSubredditUsingPost_subreddit_id_fkey")
   subreddit_id: ID
   title: String
   username: String
-  vote: [Vote] @materializer(query: "getVoteUsingVote_post_id_fkey")
+  subreddit: [Subreddit]
+    @materializer(
+      query: "getSubredditListById",
+      arguments: [{ name: "id", field: "subreddit_id" }]
+    )
+  votes: [Vote] 
+    @materializer(
+      query: "getVotesByPostId",
+      arguments: [{ name: "post_id", field: "id" }]
+    )
+  comments: [Comment] 
+    @materializer(
+      query: "getCommentByPostId",
+      arguments: [{ name: "post_id", field: "id" }]
+    )
 }
 
 """
@@ -62,6 +73,16 @@ type Query {
       table: "comment"
       configuration: "postgresql_config"
     )
+
+  getCommentByPostId(post_id: ID!): [Comment]
+    @dbquery(
+      type: "postgresql"
+      query: """
+      select * from "comment" where "post_id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+
   getCommentList: [Comment]
     @dbquery(
       type: "postgresql"
@@ -95,6 +116,7 @@ type Query {
       table: "post"
       configuration: "postgresql_config"
     )
+
   getPostList: [Post]
     @dbquery(
       type: "postgresql"
@@ -102,6 +124,7 @@ type Query {
       table: "post"
       configuration: "postgresql_config"
     )
+
   getPostPaginatedList(first: Int, after: Int): [Post]
     @dbquery(
       type: "postgresql"
@@ -146,6 +169,7 @@ type Query {
       table: "subreddit"
       configuration: "postgresql_config"
     )
+
   getSubredditList: [Subreddit]
     @dbquery(
       type: "postgresql"
@@ -153,6 +177,8 @@ type Query {
       table: "subreddit"
       configuration: "postgresql_config"
     )
+
+
   getSubredditListByTopic(topic: String!): [Subreddit]
     @dbquery(
       type: "postgresql"
@@ -161,6 +187,17 @@ type Query {
       """
       configuration: "postgresql_config"
     )
+
+  getSubredditListById(id: ID!): [Subreddit]
+    @dbquery(
+      type: "postgresql"
+      query: """
+      select * from "subreddit" where "id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+
+
   getSubredditPaginatedList(first: Int, after: Int): [Subreddit]
     @dbquery(
       type: "postgresql"
@@ -209,6 +246,16 @@ type Query {
       schema: "public"
       query: """
       SELECT "created_at", "id", "post_id", "upvote", "username" FROM "vote" WHERE "post_id" = $1
+      """
+      configuration: "postgresql_config"
+    )
+
+  getVotesByPostId(post_id: ID!): [Vote]
+    @dbquery(
+      type: "postgresql"
+      query: """
+      select * from "vote" where "post_id" = $1
+      order by "created_at" desc
       """
       configuration: "postgresql_config"
     )
@@ -272,12 +319,14 @@ type Mutation {
       dml: DELETE
       configuration: "postgresql_config"
     )
+
+
   insertPost(
-    body: String
-    subreddit_id: ID
-    title: String
-    username: String
-    image: String
+    body: String!
+    subreddit_id: ID!
+    title: String!
+    username: String!
+    image: String!
   ): Post
     @dbquery(
       type: "postgresql"
@@ -286,6 +335,16 @@ type Mutation {
       dml: INSERT
       configuration: "postgresql_config"
     )
+
+    insertSubreddit(topic: String!): Subreddit
+      @dbquery(
+        type: "postgresql"
+        table: "subreddit"
+        dml: INSERT 
+        configuration: "postgresql_config"
+      )
+
+
   updatePost(
     id: ID!
     body: String
@@ -321,14 +380,8 @@ type Mutation {
       dml: DELETE
       configuration: "postgresql_config"
     )
-  insertSubreddit(topic: String, created_at: DateTime): Subreddit
-    @dbquery(
-      type: "postgresql"
-      schema: "public"
-      table: "subreddit"
-      dml: INSERT
-      configuration: "postgresql_config"
-    )
+  
+
   updateSubreddit(id: ID!, created_at: DateTime, topic: String): Subreddit
     @dbquery(
       type: "postgresql"
